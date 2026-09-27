@@ -1,13 +1,13 @@
 {
   "name": "wapliss-whatsapp",
-  "version": "0.4.0",
-  "description": "Connect WhatsApp to Claude through Wapliss, with secure account authentication, usage limits, and UltraMsg connectivity.",
+  "version": "0.6.0",
+  "description": "Use WhatsApp from Claude through Wapliss. Install, click Connect, and sign in at wapliss.com — no tokens or configuration.",
   "author": {
     "name": "Wapliss",
     "url": "https://wapliss.com/"
   },
-  "homepage": "https://wapliss.com/ultramsg",
-  "repository": "https://github.com/proteuscrypto/whatsapp-ultramsg",
+  "homepage": "https://wapliss.com/",
+  "repository": "https://github.com/proteuscrypto/wapliss-whatsapp-for-claude",
   "license": "MIT",
-  "keywords": ["whatsapp", "wapliss", "ultramsg", "messaging", "oauth"]
+  "keywords": ["whatsapp", "wapliss", "green-api", "messaging", "mcp", "oauth"]
 }
