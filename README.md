@@ -80,8 +80,21 @@ at 00:00 UTC. You manage or cancel your subscription from the dashboard.
 
 ## Development
 
-The WhatsApp tools are served by the Wapliss backend, not by this plugin. To
-test against a staging server, point `.mcp.json` to its `/mcp` URL.
+This repository contains only the Claude plugin: its MCP connection settings
+and the skill that guides Claude. The Wapliss web application and backend are
+developed separately in
+[proteuscrypto/Wapliss-Web-y-Backend](https://github.com/proteuscrypto/Wapliss-Web-y-Backend).
+
+That backend project is still under development and is not complete. It owns
+the Wapliss website and account panel, sign-in and Claude OAuth, subscriptions
+and billing, WhatsApp instance provisioning and connection, the remote MCP
+server, quota enforcement, and account administration. These capabilities are
+not implemented in this plugin repository. To test against a staging server,
+point `.mcp.json` to its `/mcp` URL.
+
+Do not merge this plugin configuration into the published branch until the
+backend is complete and the production MCP endpoint and its authorization flow
+are deployed and ready for users.
 
 ## Credits
 
