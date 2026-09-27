@@ -15,13 +15,15 @@ WhatsApp connection, and message limits — you never touch an API token.
    You land directly in your Wapliss dashboard.
 4. **Activate your subscription.** As soon as the payment is approved, Wapliss
    creates your WhatsApp instance automatically.
-5. **Scan the QR code** shown in the dashboard with WhatsApp on your phone:
-   **Settings → Linked devices → Link a device**.
+5. **Link your WhatsApp** from the dashboard: scan the QR code with your phone
+   (**Settings → Linked devices → Link a device**) or enter the 8-digit
+   pairing code instead.
 6. You are sent back to Claude, already connected. Done.
 
 There is nothing to copy, paste, or configure. Your WhatsApp provider
 credentials are stored encrypted on the Wapliss servers and are never sent to
-Claude or to your computer.
+Claude or to your computer. Under the hood, Wapliss creates a dedicated
+[Green-API](https://green-api.com/) WhatsApp instance for each subscriber.
 
 If something is missing (no subscription yet, phone disconnected, payment
 failed), Claude tells you what happened and gives you the exact link to fix it.
@@ -46,17 +48,13 @@ You can revoke Claude's access at any time from your Wapliss dashboard.
 
 ## Features
 
-- Send text, image, document, audio, video, location, and contact (vCard)
-  messages.
-- Read message history and chats.
-- React to and delete messages.
-- List and inspect groups and contacts, check whether a number has WhatsApp,
-  and block or unblock contacts.
+- Send text, images, documents, audio, video, locations, contacts, and polls;
+  forward messages.
+- Edit and delete messages you sent.
+- Read recent messages, chats, and full chat history.
+- List contacts, inspect and create groups, add or remove group participants,
+  and check whether a number has WhatsApp.
 - Check your Wapliss account status, plan, and daily usage.
-
-> **Editing messages:** WhatsApp does not support editing an already-sent
-> message through the API. Claude can delete it (`delete_message`) and send a
-> corrected replacement.
 
 ## Usage examples
 
@@ -75,24 +73,15 @@ at 00:00 UTC. You manage or cancel your subscription from the dashboard.
 
 ## Security and responsible use
 
-- You never handle provider tokens; Wapliss stores them encrypted.
+- You never handle Green-API tokens; Wapliss stores them encrypted.
 - Claude confirms recipients and content before sending anything you did not
   explicitly ask for, and never sends bulk messages without confirming the full
   recipient list. Mass messaging can get a number banned by WhatsApp.
 
 ## Development
 
-`dev/stdio-server/` contains a dependency-free local MCP server that talks to a
-single, manually configured UltraMsg instance. It is **only** for testing the
-tool surface during development and is not used by the published plugin.
-
-```bash
-cp dev/stdio-server/.env.example dev/stdio-server/.env   # add your test credentials
-claude mcp add wapliss-dev -- node dev/stdio-server/index.js
-```
-
-Never commit `.env`. If a token is ever exposed, regenerate it in the UltraMsg
-dashboard.
+The WhatsApp tools are served by the Wapliss backend, not by this plugin. To
+test against a staging server, point `.mcp.json` to its `/mcp` URL.
 
 ## Credits
 
