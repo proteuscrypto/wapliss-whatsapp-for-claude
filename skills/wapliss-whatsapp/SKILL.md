@@ -1,110 +1,90 @@
 ---
 name: wapliss-whatsapp
 description: >
-  This skill should be used whenever the user asks to send a WhatsApp message,
-  check WhatsApp messages, read WhatsApp chats, send an image/document/video/
-  audio/location by WhatsApp, manage WhatsApp groups or contacts, connect
-  WhatsApp to Claude, or check their Wapliss account. Trigger phrases include
-  "send a WhatsApp message to", "mandale un WhatsApp a", "check my WhatsApp
-  messages", "revisa mis mensajes de WhatsApp", "what does the WhatsApp group
-  say", "send this image on WhatsApp", "check whether this number has
-  WhatsApp", "connect my WhatsApp".
+  Use this skill when the user wants to send a WhatsApp text, image, document,
+  audio, video, location, contact, poll, or forwarded message through Wapliss,
+  check their Wapliss account status, or asks about WhatsApp capabilities.
+  Example requests: "Send a WhatsApp message to Alex", "Envía este PDF por
+  WhatsApp", "Check my Wapliss account", "Conecta Wapliss con Claude".
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
-# WhatsApp via Wapliss
+# Wapliss WhatsApp
 
-The Wapliss MCP tools send and read WhatsApp messages through the user's
-Wapliss account. Wapliss handles sign-in, subscription, the WhatsApp
-connection (a Green-API instance created automatically for each user), and the
-daily message quota on its servers.
+Use the Wapliss MCP connector. Reply in the user's language. Authenticate with
+the connector's **Connect** flow; never ask for API keys, WhatsApp credentials,
+or local configuration. The connector targets Wapliss's MCP service, not its
+GitHub source repository.
 
-## Connecting
+## Available tools
 
-- If the Wapliss tools are not available or Claude reports that the connector
-  needs authentication, tell the user to click **Connect** on the Wapliss
-  connector, or to open https://wapliss.com/ to sign up. Setup is: sign up →
-  activate subscription → scan QR code → done.
-- **Never** ask the user for Green-API (or any provider) instance IDs, tokens,
-  or API keys, and never suggest editing `.env` files. Users do not have or
-  need them.
+The current backend implements these MCP operations:
 
-## Account states
+- `get_account_status`: read account state, plan, current usage, and quota.
+- `send_text_message`: `chat_id`, `text`.
+- `send_image`: `chat_id`, `url`, optional `caption`.
+- `send_document`: `chat_id`, `url`, `file_name`, optional `caption`.
+- `send_audio`: `chat_id`, `url`.
+- `send_video`: `chat_id`, `url`, optional `caption`.
+- `send_location`: `chat_id`, `latitude`, `longitude`, optional `name` and
+  `address`.
+- `send_contact`: `chat_id`, `contact_phone`, `contact_name`.
+- `send_poll`: `chat_id`, `question`, `options`.
+- `forward_messages`: `chat_id`, `message_ids`.
 
-When unsure whether the account is ready, call `get_account_status` first.
-Tool errors from Wapliss include a state and a link. Relay the message in
-plain language and give the link exactly as returned; do not retry in a loop.
+Media URLs must be publicly reachable by Wapliss. Use only the parameters in
+the tool schema; do not add unsupported fields such as `quoted_message_id`.
 
-| State | What to tell the user |
-|---|---|
-| `registered` | They need to activate the subscription (billing link). |
-| `payment_pending` | Payment is being processed; try again in a moment. |
-| `provisioning` | Their WhatsApp is being prepared; try again in a minute. |
-| `awaiting_qr` / `disconnected` | Scan the QR in the dashboard: WhatsApp → Settings → Linked devices → Link a device. |
-| `past_due` | Messages still work, but they should update the payment method. |
-| `canceled` | The subscription ended; they can reactivate from the dashboard. |
-| `active` | Everything is ready. |
+## Important limitations
 
-Linking the phone (QR code or 8-digit pairing code) happens only in the
-Wapliss dashboard; send the user to the link Wapliss returns.
+The backend currently advertises additional tools for reading chats, contacts,
+groups, editing/deleting messages, and checking instance status, but returns
+`no disponible hasta la fase 3` when they are called. Do not call those tools or
+claim those capabilities work. If asked to read messages, search contacts,
+inspect/manage groups, edit/delete messages, check the WhatsApp connection, or
+check whether a number has WhatsApp, explain that this operation is not yet
+available through the current Claude connector. Do not invent results.
 
-## Before sending anything
+## Sending safely
 
-1. Before sending a message that isn't explicitly and clearly requested by the
-   user (e.g. a new recipient not previously discussed, or a large group),
-   briefly confirm the recipient and content first.
-2. Never send bulk/broadcast messages to multiple contacts without explicit
-   confirmation of the full recipient list — this can get the number banned
-   by WhatsApp and may violate WhatsApp's terms.
+- Send only when the user specified the recipient and content clearly. If the
+  recipient is ambiguous or the content was not requested, ask for confirmation
+  of the exact recipient and content first.
+- Never send a bulk message until the user confirms the complete recipient list
+  and content. Do not turn a one-to-one request into a broadcast.
+- Do not invent phone numbers or chat IDs. If a name cannot be resolved from
+  context, ask the user for the international number or exact chat ID; the
+  current MCP cannot look up contacts or chats for you.
+- Chat IDs may be international numbers or IDs ending in `@c.us` or `@g.us`.
+- Confirm the recipient and content before `forward_messages`; forwarding is a
+  send and the current schema accepts only `chat_id` and `message_ids`.
+- The MCP enqueues messages asynchronously. A successful tool response means
+  the request was queued, not that WhatsApp delivered it. Tell the user it was
+  queued and include its queue ID/status when returned. Never claim delivery
+  unless a later verified status says it was delivered.
 
-## Phone numbers and chat IDs
+## Account and errors
 
-- Individual chats: chat ids are the international number with digits only
-  plus `@c.us` (e.g. `5491122334455@c.us`). Tools also accept a plain
-  international number (`+5491122334455`) and Wapliss normalizes it.
-- Group chats: the chatId ends in `@g.us`. If the user only knows the group
-  name, look it up in `get_chats` (or `get_contacts`, type `group`) before
-  asking for the id; `get_group` returns its participants and details.
-- Before messaging a number for the first time, `check_whatsapp` tells you
-  whether it has WhatsApp.
-- Never invent a phone number or chatId. If the user names a contact by name
-  only, look them up with `get_contacts` first; if not found, ask for the
-  number.
+- Use `get_account_status` for the account state and quota. If OAuth is missing,
+  expired, or revoked, ask the user to click **Connect** again.
+- In MCP tool errors, follow `result.wapliss_error.action_url` exactly when it
+  is present. Account errors use codes such as `account_registered`,
+  `account_payment_pending`, `account_provisioning`, `account_awaiting_qr`,
+  `account_disconnected`, `account_past_due`, and `account_canceled`; explain
+  the accompanying message and direct the user to the supplied action URL.
+- `instance_not_connected` means the user must connect WhatsApp in the Wapliss
+  panel; use the supplied action URL and do not request tokens or QR data in
+  chat.
+- `quota_exceeded` means the backend rejected the operation at its quota limit.
+  Report the returned message and action URL; do not promise a reset time unless
+  the response actually includes one.
+- HTTP 429 / JSON-RPC rate-limit errors include a retry duration in the error
+  message. Wait for that duration if the user retries; never retry in a loop.
+- For other tool or provider errors, report the returned error plainly and do
+  not claim the message was queued or sent if the tool failed.
 
-## Sending messages
+## Language and privacy
 
-- Plain text: `send_text_message`.
-- Media (`send_image`, `send_document`, `send_audio`, `send_video`): need a
-  **publicly reachable URL** and a file name with extension. A local file path
-  alone will not work.
-- Location: `send_location` with latitude/longitude as numbers.
-- Contact card: `send_contact` (phone number plus name).
-- Poll: `send_poll` (question plus 2-12 options).
-- Forward: `forward_messages` (source chat plus message ids).
-
-## Editing and deleting
-
-- `edit_message` changes the text of a message the user sent (WhatsApp only
-  allows this for a limited time after sending; if it fails, offer a follow-up
-  correction instead).
-- `delete_message` deletes a message (for everyone when WhatsApp allows it).
-- Both are hard to undo: confirm with the user first.
-
-## Reading messages and chats
-
-- `get_last_incoming_messages` / `get_last_outgoing_messages`: recent messages
-  across all chats (optionally limited to the last N minutes).
-- `get_chats`: list of conversations.
-- `get_chat_history`: messages in one chat (needs `chatId`, optional count).
-- `get_message`: one message by id.
-- `mark_chat_read` / `archive_chat`: housekeeping on a chat.
-- Summarize messages in plain language (sender, time, content) rather than
-  dumping raw JSON, unless the user asked for raw data.
-
-## Quotas and reliability
-
-If Wapliss reports `quota_exceeded`, tell the user the limit, when it resets
-(00:00 UTC), and the upgrade link returned. If a send fails or stays queued,
-check `get_account_status` / `get_instance_status` and explain the likely
-cause instead of retrying silently.
+Summarize account results in natural language; do not dump raw JSON unless
+requested. Never reveal credentials or ask the user to paste them into Claude.
