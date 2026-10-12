@@ -4,8 +4,8 @@ description: >
   Use this skill when the user wants to send a WhatsApp text, image, document,
   audio, video, location, contact, poll, or forwarded message through Wapliss,
   check their Wapliss account status, or asks about WhatsApp capabilities.
-  Example requests: "Send a WhatsApp message to Alex", "Envía este PDF por
-  WhatsApp", "Check my Wapliss account", "Conecta Wapliss con Claude".
+  Example requests: "Send a WhatsApp message to Alex", "Send this PDF on
+  WhatsApp", "Check my Wapliss account", "Connect Wapliss to Claude".
 metadata:
   version: "0.7.0"
 ---
@@ -40,8 +40,8 @@ the tool schema; do not add unsupported fields such as `quoted_message_id`.
 
 The backend currently advertises additional tools for reading chats, contacts,
 groups, editing/deleting messages, and checking instance status, but returns
-`no disponible hasta la fase 3` when they are called. Do not call those tools or
-claim those capabilities work. If asked to read messages, search contacts,
+an unavailable-until-a-later-phase error when they are called. Do not call
+those tools or claim those capabilities work. If asked to read messages, search contacts,
 inspect/manage groups, edit/delete messages, check the WhatsApp connection, or
 check whether a number has WhatsApp, explain that this operation is not yet
 available through the current Claude connector. Do not invent results.

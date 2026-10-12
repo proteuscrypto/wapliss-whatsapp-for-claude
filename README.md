@@ -72,11 +72,11 @@ Wapliss can fetch.
 ## Not available yet
 
 The backend advertises some additional tools, but currently returns
-`no disponible hasta la fase 3` for reading chats/messages, looking up
-contacts, checking WhatsApp availability, group operations, editing/deleting
-messages, and checking instance status. This plugin does not present those
-operations as available. Linking the phone and managing the WhatsApp instance
-are done in the Wapliss panel.
+an unavailable-until-a-later-phase error for reading chats/messages, looking
+up contacts, checking WhatsApp availability, group operations,
+editing/deleting messages, and checking instance status. This plugin does not
+present those operations as available. Linking the phone and managing the
+WhatsApp instance are done in the Wapliss panel.
 
 ## Account errors and quotas
 
@@ -90,9 +90,9 @@ by Wapliss and can be checked with `get_account_status`.
 ## Project and release status
 
 This plugin is version **0.7.0**. It was aligned with backend source commit
-`28468a5` (`refactor: rebrand from Green-API to autonomous motor`, 2026-10-12),
-which implements the send queue and account-status tool while leaving several
-advertised read/management tools disabled until a later phase.
+`28468a5` from 2026-10-12, which implements the send queue and account-status
+tool while leaving several advertised read/management tools disabled until a
+later phase.
 
 The public MCP discovery endpoints have been observed, but that alone does not
 prove an authenticated Claude OAuth flow or successful WhatsApp delivery. Do
