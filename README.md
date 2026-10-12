@@ -1,126 +1,104 @@
 # Wapliss WhatsApp for Claude
 
-Connect [WhatsApp](https://web.whatsapp.com/) to Claude through
-[Wapliss](https://wapliss.com/ultramsg). Wapliss manages authentication,
-UltraMsg connectivity, subscription plans, and message quotas.
+Connect Claude to WhatsApp through Wapliss. This plugin connects to the hosted
+Wapliss MCP service using OAuth; it does not connect Claude to the backend's
+GitHub repository and does not require provider tokens or local configuration.
 
 **Provided by [Wapliss](https://wapliss.com/).**
 
-## User setup
-
-The intended user experience is zero-configuration inside Claude:
+## Setup
 
 1. Install the Wapliss WhatsApp plugin in Claude.
-2. Ask Claude to send a WhatsApp message or check the connection.
-3. When Claude reports that the account is not connected, open
-  [wapliss.com/ultramsg](https://wapliss.com/ultramsg).
-4. Sign in with Google or email.
-5. Connect WhatsApp by scanning the QR code shown by Wapliss.
-6. Return to Claude and retry the action.
+2. Click **Connect** on the Wapliss connector and sign in or create your
+   account at [wapliss.com](https://wapliss.com/).
+3. Approve Claude's access to your Wapliss account.
+4. In the Wapliss panel, create or select your WhatsApp instance and link your
+   phone using the QR code or pairing flow shown there.
+5. Return to Claude and ask it to check your Wapliss account status.
 
-Users must never copy an UltraMsg token into Claude. Wapliss stores and uses
-the provider credentials on the server side.
+If authorization expires, use **Connect** again. Never paste Wapliss API keys,
+WhatsApp credentials, or session data into Claude.
 
-> **Deployment requirement:** the zero-configuration flow requires the Wapliss
-> hosted MCP server, OAuth callback, database, and UltraMsg provisioning API.
-> The local `stdio` server in this repository is a development fallback and
-> does not yet provide user authentication, quotas, or Stripe billing.
+## How it works
 
-## Features
-
-- Send text, image, document, audio, video, location, and contact (vCard)
-  messages through WhatsApp.
-- Read message history and chats from the connected instance.
-- React to and delete messages.
-- List and inspect groups and contacts, check WhatsApp availability, and
-  block or unblock contacts.
-- Check the connection status and get the QR code needed to link WhatsApp.
-
-> **Editing messages:** WhatsApp does not support editing an already-sent
-> message through the API. The plugin can delete it (`delete_message`) and
-> send a corrected replacement.
-
-## Components
-
-| Component | Count | Purpose |
-|---|---|---|
-| MCP server | 1 | Exposes 22 tools that call the UltraMsg REST API (`api.ultramsg.com`) |
-| Skill | 1 | Guides Claude on phone numbers, chat IDs, confirmations, and responses |
-
-## Local development fallback
-
-For local development only, the current `stdio` server can call a manually
-configured UltraMsg instance. This path is not the intended end-user flow.
-
-1. Create a free account at [ultramsg.com](https://ultramsg.com) and create a
-  new **Instance**. The free trial is enough for testing.
-2. Open the instance dashboard and copy the **Instance ID** and **Token**.
-3. In UltraMsg, display the QR code. On your phone, open WhatsApp and choose
-  **Settings -> Linked devices -> Link a device**, then scan the QR code.
-4. Open the installed plugin folder and copy `.env.example` to `.env`.
-5. Edit `.env` and replace both placeholder values:
-
-  ```env
-  ULTRAMSG_INSTANCE_ID=your_instance_id
-  ULTRAMSG_TOKEN=your_token
-  ```
-
-  Save the file. The server loads it automatically when Claude starts. Never
-  commit or share `.env`; it is excluded by `.gitignore`.
-6. Restart Claude so the MCP server reloads the credentials.
-7. Test the connection by asking Claude: **"Check my WhatsApp instance
-  status."** Claude will use `get_instance_status`.
-
-If the instance is not connected, ask Claude for the QR code and scan it with
-WhatsApp using **Settings -> Linked devices -> Link a device**.
-
-### Alternative: environment variables
-
-If you prefer not to use a local file, set `ULTRAMSG_INSTANCE_ID` and
-`ULTRAMSG_TOKEN` in the environment that starts Claude. Environment variables
-take priority over `.env`.
-
-For example, in PowerShell:
-
-```powershell
-$env:ULTRAMSG_INSTANCE_ID = "instance12345"
-$env:ULTRAMSG_TOKEN = "your_ultramsg_token"
+```text
+Claude plugin --OAuth 2.1--> https://wapliss.com/mcp
+                                   |
+                        Wapliss WhatsApp engine
+                                   |
+                               WhatsApp
 ```
 
-Then restart Claude from the same session.
+The code for the web application and backend lives in
+[proteuscrypto/Wapliss-Web-y-Backend](https://github.com/proteuscrypto/Wapliss-Web-y-Backend).
+That GitHub URL is the source repository, not the MCP connection URL. The
+plugin's remote HTTP MCP endpoint is configured in [.mcp.json](.mcp.json).
 
-## Plans and quotas
+The current backend uses its own WhatsApp engine. The plugin stores no account
+data or WhatsApp credentials; authorization and account management are handled
+by Wapliss.
 
-The Wapliss service will provide:
+## Available from Claude
 
-- **Free:** up to 100 messages per account per UTC day.
-- **Pro:** a recurring Stripe subscription with the Wapliss quota removed,
-  subject to the limits of the connected UltraMsg plan.
-- **Upgrade:** users upgrade from the Wapliss dashboard; the same WhatsApp
-  connection remains in place.
+The backend currently implements account status and these asynchronous send
+operations:
 
-The quota must be enforced by the Wapliss middleware, not by Claude and not
-by the client-side page. The server must count accepted sends atomically and
-reset the daily window at 00:00 UTC.
+- Text: `send_text_message` with `chat_id` and `text`.
+- Image: `send_image` with `chat_id`, a public `url`, and optional `caption`.
+- Document: `send_document` with `chat_id`, a public `url`, `file_name`, and
+  optional `caption`.
+- Audio and video: `send_audio` or `send_video` with `chat_id` and public `url`;
+  video also accepts an optional `caption`.
+- Location: `send_location` with `chat_id`, `latitude`, `longitude`, and
+  optional `name` and `address`.
+- Contact card: `send_contact` with `chat_id`, `contact_phone`, and
+  `contact_name`.
+- Poll: `send_poll` with `chat_id`, `question`, and `options`.
+- Forward: `forward_messages` with destination `chat_id` and `message_ids`.
+- Account: `get_account_status` reports account state, plan, and usage.
 
-## Usage
+Sending is queued asynchronously. A successful response means Wapliss accepted
+the request into its queue; it does not confirm WhatsApp delivery. Claude will
+report the queue ID/status returned by the service and must not say a message
+was delivered without a later delivery confirmation.
 
-After setup, ask Claude in natural language. For example:
+Before sending, Claude confirms when the recipient or content is ambiguous or
+was not explicitly requested. Bulk messages require confirmation of the full
+recipient list and content. The current MCP cannot look up names, contacts, or
+chat history, so provide the recipient's international number or exact chat ID
+when it is not already clear from context. Files must have a public URL that
+Wapliss can fetch.
 
-- "Send a WhatsApp message to +54 9 11 2233-4455 saying I will be late."
-- "Check my latest WhatsApp messages."
-- "List my WhatsApp groups."
-- "Check whether this number has WhatsApp: +1 405 555 0100."
-- "Send this image to Juan on WhatsApp." (The image needs a public URL.)
+## Not available yet
 
-## Security
+The backend advertises some additional tools, but currently returns
+an unavailable-until-a-later-phase error for reading chats/messages, looking
+up contacts, checking WhatsApp availability, group operations,
+editing/deleting messages, and checking instance status. This plugin does not
+present those operations as available. Linking the phone and managing the
+WhatsApp instance are done in the Wapliss panel.
 
-- The UltraMsg token gives full access to the instance. Treat it like a
-  password: never share it or paste it into chats or public repositories.
-- If a token appears in a screenshot, chat, log, or repository, regenerate it
-  immediately in the UltraMsg dashboard and update `.env`.
-- The plugin never sends bulk messages without explicit user confirmation
-  (see `skills/whatsapp-ultramsg/SKILL.md`).
+## Account errors and quotas
+
+Use the status and `action_url` returned by Wapliss. The service may ask you to
+finish registration or billing, wait for provisioning, link/reconnect the
+phone, or reactivate a canceled account. Quota errors include the service's
+message and panel link. HTTP 429 rate-limit errors include a retry duration;
+wait that long and do not retry repeatedly. Plan limits and usage are managed
+by Wapliss and can be checked with `get_account_status`.
+
+## Project and release status
+
+This plugin is version **0.7.0**. It was aligned with backend source commit
+`28468a5` from 2026-10-12, which implements the send queue and account-status
+tool while leaving several advertised read/management tools disabled until a
+later phase.
+
+The public MCP discovery endpoints have been observed, but that alone does not
+prove an authenticated Claude OAuth flow or successful WhatsApp delivery. Do
+not treat this plugin/backend combination as fully production-verified until
+OAuth and representative MCP calls have been tested against the deployed
+service. Re-check the backend contract before each release.
 
 ## Credits
 
