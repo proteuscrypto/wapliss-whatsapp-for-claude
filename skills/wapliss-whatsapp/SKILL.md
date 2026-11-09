@@ -3,11 +3,13 @@ name: wapliss-whatsapp
 description: >
   Use this skill when the user wants to send a WhatsApp text, image, document,
   audio, video, location, contact, poll, or forwarded message through Wapliss,
-  check their Wapliss account status, or asks about WhatsApp capabilities.
-  Example requests: "Send a WhatsApp message to Alex", "Send this PDF on
-  WhatsApp", "Check my Wapliss account", "Connect Wapliss to Claude".
+  read their WhatsApp chats, group messages or group members, check their
+  Wapliss account status, or asks about WhatsApp capabilities.
+  Example requests: "Send a WhatsApp message to Alex", "Read my last messages
+  from Laura", "What did they say in the family group?", "Check my Wapliss
+  account", "Connect Wapliss to Claude".
 metadata:
-  version: "0.8.0"
+  version: "0.9.0"
 ---
 
 # Wapliss WhatsApp
@@ -33,19 +35,38 @@ The current backend implements these MCP operations:
 - `send_poll`: `chat_id`, `question`, `options`.
 - `forward_messages`: `chat_id`, `message_ids`.
 
+Read-only tools (chats and groups of the authenticated account only):
+
+- `get_chats`: optional `type` (`all`, `individual`, `group`), `unread_only`,
+  `query` (name, number or last-message text), `limit` (max 50), `cursor`.
+  Returns `chat_id`, name, type, last message, date and unread count.
+- `get_chat_history`: `chat_id` (a `chat_id` from `get_chats`, an international
+  number, or the exact chat name), optional `limit` (max 50) and `before`
+  (ISO date or the `before_cursor` of the previous page). Messages come in
+  chronological order; in groups each incoming message has `sender_name` and
+  `sender_phone`.
+- `get_message`: `chat_id`, `message_id`.
+- `get_last_incoming_messages`: optional `limit`, `since`, `include_groups`.
+- `get_last_outgoing_messages`: optional `limit`, `since`.
+- `get_group`: `chat_id` of a group (or its exact name), optional `refresh`.
+  Returns name, description, size, admins and participants.
+
 Media URLs must be publicly reachable by Wapliss. Use only the parameters in
 the tool schema; do not add unsupported fields such as `quoted_message_id`.
 
 ## Important limitations
 
-The backend currently advertises additional tools for reading chats, contacts,
-groups, editing/deleting messages, and checking instance status, but returns
-an unavailable-until-a-later-phase error when they are called (the error text
-is `no disponible hasta la fase 3`). Do not call
-those tools or claim those capabilities work. If asked to read messages, search contacts,
-inspect/manage groups, edit/delete messages, check the WhatsApp connection, or
-check whether a number has WhatsApp, explain that this operation is not yet
-available through the current Claude connector. Do not invent results.
+Searching the contact book, checking whether a number has WhatsApp, managing
+groups (create, add or remove participants), editing or deleting messages,
+marking chats read, archiving, and checking the instance status are not
+available yet; the backend answers `no disponible hasta la fase 3` if called.
+If asked for those, explain they are not available through the connector yet.
+Do not invent results.
+
+History is what Wapliss has synchronized from the linked phone. Very old chats
+may be missing; when a tool returns `chat_not_found` or an empty history, say
+so plainly instead of guessing. Media files are not downloaded: describe them
+by type and caption.
 
 ## Sending safely
 
@@ -54,10 +75,10 @@ available through the current Claude connector. Do not invent results.
   of the exact recipient and content first.
 - Never send a bulk message until the user confirms the complete recipient list
   and content. Do not turn a one-to-one request into a broadcast.
-- Do not invent phone numbers or chat IDs. If a name cannot be resolved from
-  context, ask the user for the international number or exact chat ID; the
-  current MCP cannot look up contacts or chats for you.
-- Chat IDs may be international numbers or IDs ending in `@c.us` or `@g.us`.
+- Do not invent phone numbers or chat IDs. To find a recipient by name, use
+  `get_chats` with `query`; if several chats match, ask which one.
+- Chat IDs may be international numbers, IDs ending in `@c.us` or `@g.us`, or
+  the `chat_id` values returned by `get_chats` (`pn:...`, `grp:...`).
 - Confirm the recipient and content before `forward_messages`; forwarding is a
   send and the current schema accepts only `chat_id` and `message_ids`.
 - The MCP enqueues messages asynchronously. A successful tool response means
@@ -86,7 +107,19 @@ available through the current Claude connector. Do not invent results.
 - For other tool or provider errors, report the returned error plainly and do
   not claim the message was queued or sent if the tool failed.
 
+## Reading safely
+
+- Read only the chats the user asked about; do not browse unrelated
+  conversations. Start with a small `limit` and page with `before` only if the
+  user needs more.
+- Summarize what you read; quote messages only when the user asks for the
+  exact text. Group members' phone numbers are personal data: show them only
+  when the user needs them.
+- Never forward, send or share content you read unless the user explicitly
+  asks for that action and confirms the recipient.
+
 ## Language and privacy
 
-Summarize account results in natural language; do not dump raw JSON unless
-requested. Never reveal credentials or ask the user to paste them into Claude.
+Summarize account results and messages in natural language; do not dump raw
+JSON unless requested. Never reveal credentials or ask the user to paste them
+into Claude.

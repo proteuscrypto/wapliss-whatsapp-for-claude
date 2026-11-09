@@ -68,6 +68,16 @@ operations:
 - Forward: `forward_messages` with destination `chat_id` and `message_ids`.
 - Account: `get_account_status` reports account state, plan, and usage.
 
+Reading (read-only, only the chats of the account you authorized):
+
+- Chats: `get_chats` lists individual chats and groups, with filters for type,
+  unread chats and a text search.
+- Messages: `get_chat_history` reads a chat or group in chronological order;
+  in groups each message shows who wrote it. `get_message` returns one message.
+- Activity: `get_last_incoming_messages` and `get_last_outgoing_messages` show
+  the latest messages across all chats.
+- Groups: `get_group` returns the name, description, admins and participants.
+
 Sending is queued asynchronously. A successful response means Wapliss accepted
 the request into its queue; it does not confirm WhatsApp delivery. Claude will
 report the queue ID/status returned by the service and must not say a message
@@ -75,18 +85,20 @@ was delivered without a later delivery confirmation.
 
 Before sending, Claude confirms when the recipient or content is ambiguous or
 was not explicitly requested. Bulk messages require confirmation of the full
-recipient list and content. The current MCP cannot look up names, contacts, or
-chat history, so provide the recipient's international number or exact chat ID
-when it is not already clear from context. Files must have a public URL that
-Wapliss can fetch.
+recipient list and content. Claude can find a recipient among your existing
+chats with `get_chats`; otherwise provide the international number. Files must
+have a public URL that Wapliss can fetch.
+
+Reading shows what Wapliss has synchronized from your linked phone; very old
+chats may be missing. Media files are described by type and caption, not
+downloaded.
 
 ## Not available yet
 
-The backend advertises some additional tools, but currently returns
-an unavailable-until-a-later-phase error (`no disponible hasta la fase 3`) for
-reading chats/messages, looking
-up contacts, checking WhatsApp availability, group operations,
-editing/deleting messages, and checking instance status. This plugin does not
+The backend still returns an unavailable-until-a-later-phase error
+(`no disponible hasta la fase 3`) for looking up contacts, checking WhatsApp
+availability, managing groups, editing/deleting messages, marking chats read,
+archiving, and checking instance status; those tools are not listed. This plugin does not
 present those operations as available. Linking the phone and managing the
 WhatsApp instance are done in the Wapliss panel.
 
@@ -101,11 +113,9 @@ by Wapliss and can be checked with `get_account_status`.
 
 ## Project and release status
 
-This plugin is version **0.8.0**. It was re-checked on 2026-11-09 against the
-deployed Wapliss MCP server (server version 1.0.0): the same 10 operations are
-implemented (`get_account_status` plus the 9 send tools), and the 17 read and
-management tools still return the phase-3 unavailable error. Tool names and
-parameters are unchanged from 0.7.0.
+This plugin is version **0.9.0**. The Wapliss MCP server lists 16 operations:
+`get_account_status`, the 9 send tools and the 6 read tools above. The other
+declared tools are not listed and still return the phase-3 unavailable error.
 
 On 2026-11-09 the OAuth discovery endpoints and the unauthenticated `401` +
 `WWW-Authenticate` response from `/mcp` were verified against production. That
@@ -114,6 +124,12 @@ test OAuth and representative MCP calls before treating a release as fully
 production-verified, and re-check the backend contract before each release.
 
 ## Changelog
+
+- **0.9.0** (2026-11-09): Read tools for chats and groups (`get_chats`,
+  `get_chat_history`, `get_message`, `get_last_incoming_messages`,
+  `get_last_outgoing_messages`, `get_group`), with safe-reading guidance in the
+  skill. Backend: the chat history is now backed up and restored across server
+  restarts, and group names and participants are synchronized.
 
 - **0.8.0** (2026-11-09): Wapliss logo and branding in the README; documented
   OAuth metadata, scopes and the panel URL; documented the exact
