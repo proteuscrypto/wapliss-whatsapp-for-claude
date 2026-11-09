@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://4144c25c59954fdd6f735c7a0e030ed2.cdn.bubble.io/f1794163595576x849555288109176200/Gemini_Generated_Image_un7sseun7sseun7s-Photoroom.png" alt="Wapliss logo" width="120" />
+</p>
+
 # Wapliss WhatsApp for Claude
 
 Connect Claude to WhatsApp through Wapliss. This plugin connects to the hosted
@@ -12,8 +16,9 @@ GitHub repository and does not require provider tokens or local configuration.
 2. Click **Connect** on the Wapliss connector and sign in or create your
    account at [wapliss.com](https://wapliss.com/).
 3. Approve Claude's access to your Wapliss account.
-4. In the Wapliss panel, create or select your WhatsApp instance and link your
-   phone using the QR code or pairing flow shown there.
+4. In the Wapliss panel ([wapliss.com/app/connect](https://wapliss.com/app/connect)),
+   create or select your WhatsApp instance and link your phone using the QR
+   code or pairing flow shown there.
 5. Return to Claude and ask it to check your Wapliss account status.
 
 If authorization expires, use **Connect** again. Never paste Wapliss API keys,
@@ -29,10 +34,16 @@ Claude plugin --OAuth 2.1--> https://wapliss.com/mcp
                                WhatsApp
 ```
 
-The code for the web application and backend lives in
-[proteuscrypto/Wapliss-Web-y-Backend](https://github.com/proteuscrypto/Wapliss-Web-y-Backend).
-That GitHub URL is the source repository, not the MCP connection URL. The
+The web application and backend are maintained separately from this plugin and
+deployed by Wapliss; this repository contains only the Claude plugin. The
 plugin's remote HTTP MCP endpoint is configured in [.mcp.json](.mcp.json).
+
+Authorization uses OAuth 2.1 with PKCE (`S256`) and dynamic client
+registration. The service publishes its metadata at
+`https://wapliss.com/.well-known/oauth-protected-resource` (resource
+`https://wapliss.com/mcp`) and
+`https://wapliss.com/.well-known/oauth-authorization-server`. Scopes:
+`wapliss:mcp`, `whatsapp:read`, `whatsapp:write`.
 
 The current backend uses its own WhatsApp engine. The plugin stores no account
 data or WhatsApp credentials; authorization and account management are handled
@@ -72,7 +83,8 @@ Wapliss can fetch.
 ## Not available yet
 
 The backend advertises some additional tools, but currently returns
-an unavailable-until-a-later-phase error for reading chats/messages, looking
+an unavailable-until-a-later-phase error (`no disponible hasta la fase 3`) for
+reading chats/messages, looking
 up contacts, checking WhatsApp availability, group operations,
 editing/deleting messages, and checking instance status. This plugin does not
 present those operations as available. Linking the phone and managing the
@@ -89,16 +101,28 @@ by Wapliss and can be checked with `get_account_status`.
 
 ## Project and release status
 
-This plugin is version **0.7.0**. It was aligned with backend source commit
-`28468a5` from 2026-10-12, which implements the send queue and account-status
-tool while leaving several advertised read/management tools disabled until a
-later phase.
+This plugin is version **0.8.0**. It was re-checked on 2026-11-09 against the
+deployed Wapliss MCP server (server version 1.0.0): the same 10 operations are
+implemented (`get_account_status` plus the 9 send tools), and the 17 read and
+management tools still return the phase-3 unavailable error. Tool names and
+parameters are unchanged from 0.7.0.
 
-The public MCP discovery endpoints have been observed, but that alone does not
-prove an authenticated Claude OAuth flow or successful WhatsApp delivery. Do
-not treat this plugin/backend combination as fully production-verified until
-OAuth and representative MCP calls have been tested against the deployed
-service. Re-check the backend contract before each release.
+On 2026-11-09 the OAuth discovery endpoints and the unauthenticated `401` +
+`WWW-Authenticate` response from `/mcp` were verified against production. That
+does not prove a full authenticated Claude OAuth flow or WhatsApp delivery;
+test OAuth and representative MCP calls before treating a release as fully
+production-verified, and re-check the backend contract before each release.
+
+## Changelog
+
+- **0.8.0** (2026-11-09): Wapliss logo and branding in the README; documented
+  OAuth metadata, scopes and the panel URL; documented the exact
+  `no disponible hasta la fase 3` error so Claude recognizes unavailable tools;
+  removed the reference to the old backend repository. Backend changes in the
+  same window (no effect on the tool contract): Wapliss web sessions no longer
+  expire after inactivity, and the WhatsApp engine now runs continuously so
+  linked phones stay connected.
+- **0.7.0** (2026-10-12): Send queue and account-status tool.
 
 ## Credits
 
