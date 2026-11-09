@@ -1,5 +1,6 @@
 {
   "name": "wapliss-whatsapp",
+  "displayName": "Wapliss WhatsApp",
   "version": "0.8.0",
   "description": "Send WhatsApp messages from Claude through Wapliss. Connect your account with OAuth 2.1 and link your WhatsApp device in the Wapliss panel.",
   "author": {
@@ -8,6 +9,9 @@
   },
   "homepage": "https://wapliss.com/",
   "privacyPolicyUrl": "https://wapliss.com/privacy-policy",
+  "termsOfServiceUrl": "https://wapliss.com/terms-of-service",
+  "supportUrl": "https://github.com/proteuscrypto/wapliss-whatsapp-for-claude/issues",
+  "documentationUrl": "https://github.com/proteuscrypto/wapliss-whatsapp-for-claude#readme",
   "repository": "https://github.com/proteuscrypto/wapliss-whatsapp-for-claude",
   "license": "MIT",
   "keywords": ["whatsapp", "wapliss", "messaging", "mcp", "oauth"]
