@@ -1,7 +1,7 @@
 {
   "name": "wapliss-whatsapp",
-  "version": "0.7.0",
-  "description": "Send WhatsApp messages from Claude through Wapliss. Connect your account with OAuth and link your WhatsApp device in the Wapliss panel.",
+  "version": "0.8.0",
+  "description": "Send WhatsApp messages from Claude through Wapliss. Connect your account with OAuth 2.1 and link your WhatsApp device in the Wapliss panel.",
   "author": {
     "name": "Wapliss",
     "url": "https://wapliss.com/"
