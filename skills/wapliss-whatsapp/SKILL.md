@@ -7,7 +7,7 @@ description: >
   Example requests: "Send a WhatsApp message to Alex", "Send this PDF on
   WhatsApp", "Check my Wapliss account", "Connect Wapliss to Claude".
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 # Wapliss WhatsApp
@@ -40,7 +40,8 @@ the tool schema; do not add unsupported fields such as `quoted_message_id`.
 
 The backend currently advertises additional tools for reading chats, contacts,
 groups, editing/deleting messages, and checking instance status, but returns
-an unavailable-until-a-later-phase error when they are called. Do not call
+an unavailable-until-a-later-phase error when they are called (the error text
+is `no disponible hasta la fase 3`). Do not call
 those tools or claim those capabilities work. If asked to read messages, search contacts,
 inspect/manage groups, edit/delete messages, check the WhatsApp connection, or
 check whether a number has WhatsApp, explain that this operation is not yet
@@ -74,7 +75,8 @@ available through the current Claude connector. Do not invent results.
   `account_disconnected`, `account_past_due`, and `account_canceled`; explain
   the accompanying message and direct the user to the supplied action URL.
 - `instance_not_connected` means the user must connect WhatsApp in the Wapliss
-  panel; use the supplied action URL and do not request tokens or QR data in
+  panel; use the supplied action URL (the panel lives at
+  https://wapliss.com/app/connect) and do not request tokens or QR data in
   chat.
 - `quota_exceeded` means the backend rejected the operation at its quota limit.
   Report the returned message and action URL; do not promise a reset time unless
