@@ -1,129 +1,211 @@
 <p align="center">
-  <img src="https://4144c25c59954fdd6f735c7a0e030ed2.cdn.bubble.io/f1794163595576x849555288109176200/Gemini_Generated_Image_un7sseun7sseun7s-Photoroom.png" alt="Wapliss logo" width="120" />
+  <img src="https://wapliss.com/icon-512.png" alt="Wapliss logo" width="120" />
 </p>
 
-# Wapliss WhatsApp for Claude
+<h1 align="center">Wapliss WhatsApp for Claude</h1>
 
-Connect Claude to WhatsApp through Wapliss. This plugin connects to the hosted
-Wapliss MCP service using OAuth; it does not connect Claude to the backend's
-GitHub repository and does not require provider tokens or local configuration.
+<p align="center">
+  <strong>Connect your own WhatsApp to Claude with the Wapliss MCP server.</strong><br />
+  Read and summarize chats and groups, and send messages, files, locations and polls, always with your confirmation.
+</p>
 
-**Provided by [Wapliss](https://wapliss.com/).**
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-25D366" alt="License: MIT" />
+  <img src="https://img.shields.io/badge/MCP-2026--07--28%20%7C%202025--11--25-128C7E" alt="MCP" />
+  <img src="https://img.shields.io/badge/Claude-plugin-128C7E" alt="Claude" />
+  <img src="https://img.shields.io/badge/version-0.8.0-25D366" alt="Version" />
+  <img src="https://img.shields.io/badge/Claude%20directory-in%20review-f59e0b" alt="Status" />
+</p>
 
-## Setup
+<p align="center">
+  <a href="https://wapliss.com/">Website</a> ·
+  <a href="https://wapliss.com/integrations#claude">Claude guide</a> ·
+  <a href="https://wapliss.com/integraciones#claude">Guía en español</a> ·
+  <a href="#example-prompts">Examples</a> ·
+  <a href="#faq">FAQ</a> ·
+  <a href="#wapliss-plugins">Other assistants</a>
+</p>
 
-1. Install the Wapliss WhatsApp plugin in Claude.
-2. Click **Connect** on the Wapliss connector and sign in or create your
-   account at [wapliss.com](https://wapliss.com/).
-3. Approve Claude's access to your Wapliss account.
-4. In the Wapliss panel ([wapliss.com/app/connect](https://wapliss.com/app/connect)),
-   create or select your WhatsApp instance and link your phone using the QR
-   code or pairing flow shown there.
-5. Return to Claude and ask it to check your Wapliss account status.
+---
 
-If authorization expires, use **Connect** again. Never paste Wapliss API keys,
-WhatsApp credentials, or session data into Claude.
+## What is Wapliss?
+
+[Wapliss](https://wapliss.com/) is a WhatsApp gateway for AI assistants. You
+link your WhatsApp number once with a QR code, authorize your assistant, and
+the assistant can read your chats and groups and send WhatsApp messages for
+you through a standard [Model Context Protocol](https://modelcontextprotocol.io/)
+(MCP) server. A free plan is available, with no credit card required.
+
+This repository is the official **Claude package** of Wapliss
+(Claude plugin with a remote MCP server and a skill). It only points Claude to the hosted Wapliss MCP
+server; it stores no account data, messages or credentials.
+
+## Compatibility
+
+| Surface | How | Status |
+| --- | --- | --- |
+| Claude.ai and Claude Desktop | **Settings → Connectors → Add custom connector** with `https://wapliss.com/mcp`, or install this plugin | Works |
+| Claude Code | `claude mcp add --transport http wapliss https://wapliss.com/mcp`, then `/mcp` to sign in | Works |
+| Claude directory | Wapliss WhatsApp plugin | In review by Anthropic |
+
+## Quick start
+
+1. Create a free account at [wapliss.com](https://wapliss.com/) and link your
+   phone once at [wapliss.com/app/connect](https://wapliss.com/app/connect).
+2. In Claude, install the **Wapliss WhatsApp** plugin, or add a custom
+   connector with `https://wapliss.com/mcp`. In Claude Code:
+
+   ```bash
+   claude mcp add --transport http wapliss https://wapliss.com/mcp
+   # then run /mcp inside Claude Code and choose Authenticate
+   ```
+
+3. Click **Connect**, sign in to Wapliss and approve access.
+4. Ask: *"Check my Wapliss account"*.
+
+## Example prompts
+
+| Goal | Ask  |
+| --- | --- |
+| Catch up | "Show me my latest WhatsApp messages" |
+| Summarize a group | "Summarize what was said today in my family group" |
+| Read a chat | "Read my last 20 messages with Ana and tell me what she needs" |
+| Group info | "Who are the admins of the work group?" |
+| Send a message | "Send 'On my way, 10 minutes' to +1 555 010 2030" |
+| Send a file | "Send this PDF to Laura: https://example.com/quote.pdf" |
+| Share a location | "Send the office location to the project group" |
+| Run a poll | "Create a poll in the team group: Friday or Monday?" |
+| Check the account | "Check my Wapliss account and today's usage" |
+
+Tips: name the chat or group as it appears in WhatsApp, or use the number with
+country code. The assistant shows you the recipient and the text before
+sending when anything is ambiguous.
+
+## What it can do (16 tools)
+
+| Area | Tools | What they do |
+| --- | --- | --- |
+| Chats and groups | `get_chats`, `get_chat_history`, `get_message` | List and search your conversations, read a chat or group in order, get one message |
+| Latest activity | `get_last_incoming_messages`, `get_last_outgoing_messages` | What you received or sent recently, across all chats |
+| Groups | `get_group` | Name, description, admins and participants |
+| Send | `send_text_message`, `send_image`, `send_document`, `send_audio`, `send_video`, `send_location`, `send_contact`, `send_poll`, `forward_messages` | Text, files by public URL, locations, contact cards, polls and forwards |
+| Account | `get_account_status` | Plan, linked number, daily usage and quota |
+
+Every tool declares MCP annotations (`readOnlyHint`, `destructiveHint`,
+`idempotentHint`, `openWorldHint`). Send tools are marked destructive, so the
+assistant asks for confirmation. A successful send means the message was
+**queued** (with a `queue_id`), not yet delivered.
 
 ## How it works
 
 ```text
-Claude plugin --OAuth 2.1--> https://wapliss.com/mcp
-                                   |
-                        Wapliss WhatsApp engine
-                                   |
-                               WhatsApp
+Claude --OAuth 2.1 (PKCE S256, dynamic client registration)--> https://wapliss.com/mcp
+                                                                       |
+                                                            Wapliss WhatsApp engine
+                                                                       |
+                                                                   WhatsApp
 ```
 
-The web application and backend are maintained separately from this plugin and
-deployed by Wapliss; this repository contains only the Claude plugin. The
-plugin's remote HTTP MCP endpoint is configured in [.mcp.json](.mcp.json).
+- Protected resource metadata: `https://wapliss.com/.well-known/oauth-protected-resource`
+- Authorization server metadata: `https://wapliss.com/.well-known/oauth-authorization-server`
+- Scopes: `wapliss:mcp`, `whatsapp:read`, `whatsapp:write`
 
-Authorization uses OAuth 2.1 with PKCE (`S256`) and dynamic client
-registration. The service publishes its metadata at
-`https://wapliss.com/.well-known/oauth-protected-resource` (resource
-`https://wapliss.com/mcp`) and
-`https://wapliss.com/.well-known/oauth-authorization-server`. Scopes:
-`wapliss:mcp`, `whatsapp:read`, `whatsapp:write`.
+## Security and privacy
 
-The current backend uses its own WhatsApp engine. The plugin stores no account
-data or WhatsApp credentials; authorization and account management are handled
-by Wapliss.
+- **Your own account only.** The assistant can reach only the WhatsApp account
+  linked to your Wapliss account, and only when you ask.
+- **No credentials in the chat.** Never paste passwords, API keys, QR data or
+  session data into a conversation; this package contains none either.
+- **Confirmation before sending.** Ambiguous recipients or texts are confirmed
+  first; bulk or unsolicited messaging is not allowed.
+- **Revocable at any time** from the Wapliss dashboard.
+- **Limits:** daily plan quota and 60 MCP calls per minute per user.
+- [Privacy policy](https://wapliss.com/privacy-policy) ·
+  [Terms of service](https://wapliss.com/terms-of-service)
 
-## Available from Claude
+## FAQ
 
-The backend currently implements account status and these asynchronous send
-operations:
+**Is it free?** Yes, there is a free plan to start, with no credit card.
 
-- Text: `send_text_message` with `chat_id` and `text`.
-- Image: `send_image` with `chat_id`, a public `url`, and optional `caption`.
-- Document: `send_document` with `chat_id`, a public `url`, `file_name`, and
-  optional `caption`.
-- Audio and video: `send_audio` or `send_video` with `chat_id` and public `url`;
-  video also accepts an optional `caption`.
-- Location: `send_location` with `chat_id`, `latitude`, `longitude`, and
-  optional `name` and `address`.
-- Contact card: `send_contact` with `chat_id`, `contact_phone`, and
-  `contact_name`.
-- Poll: `send_poll` with `chat_id`, `question`, and `options`.
-- Forward: `forward_messages` with destination `chat_id` and `message_ids`.
-- Account: `get_account_status` reports account state, plan, and usage.
+**Does it use the official WhatsApp Business Platform?** No. Wapliss links
+your number as a WhatsApp linked device, like WhatsApp Web, so it works with
+your personal or business number without a Meta Business account. Use it for
+your own conversations and follow WhatsApp's terms.
 
-Sending is queued asynchronously. A successful response means Wapliss accepted
-the request into its queue; it does not confirm WhatsApp delivery. Claude will
-report the queue ID/status returned by the service and must not say a message
-was delivered without a later delivery confirmation.
+**Can the assistant send messages on its own?** No. It only acts when you ask,
+confirms ambiguous sends and refuses bulk or unsolicited messages.
 
-Before sending, Claude confirms when the recipient or content is ambiguous or
-was not explicitly requested. Bulk messages require confirmation of the full
-recipient list and content. The current MCP cannot look up names, contacts, or
-chat history, so provide the recipient's international number or exact chat ID
-when it is not already clear from context. Files must have a public URL that
-Wapliss can fetch.
+**Where are my messages stored?** In your private Wapliss account, so the
+assistant can read them when you ask. What the assistant reads is processed by
+its AI provider. See the [privacy policy](https://wapliss.com/privacy-policy).
 
-## Not available yet
+**Can I use several assistants at once?** Yes. Each one is authorized
+separately and can be revoked separately.
 
-The backend advertises some additional tools, but currently returns
-an unavailable-until-a-later-phase error (`no disponible hasta la fase 3`) for
-reading chats/messages, looking
-up contacts, checking WhatsApp availability, group operations,
-editing/deleting messages, and checking instance status. This plugin does not
-present those operations as available. Linking the phone and managing the
-WhatsApp instance are done in the Wapliss panel.
+## Troubleshooting
 
-## Account errors and quotas
+| Message from Wapliss | What it means | What to do |
+| --- | --- | --- |
+| `account_awaiting_qr` / `instance_not_connected` | No phone is linked to this Wapliss account | Link it at [wapliss.com/app/connect](https://wapliss.com/app/connect) |
+| `account_disconnected` | WhatsApp closed the linked session | Scan the QR code again |
+| `quota_exceeded` | Daily message quota reached | Wait for the reset or upgrade the plan |
+| Rate limit (`-32300` / HTTP 429) | More than 60 calls in a minute | Wait the seconds indicated |
+| `chat_not_found` | No chat matches the name or number | Search with another name or the full number with country code |
 
-Use the status and `action_url` returned by Wapliss. The service may ask you to
-finish registration or billing, wait for provisioning, link/reconnect the
-phone, or reactivate a canceled account. Quota errors include the service's
-message and panel link. HTTP 429 rate-limit errors include a retry duration;
-wait that long and do not retry repeatedly. Plan limits and usage are managed
-by Wapliss and can be checked with `get_account_status`.
+## Package layout
 
-## Project and release status
+```text
+.claude-plugin/plugin.json        Claude plugin manifest
+.mcp.json                         Remote MCP server (https://wapliss.com/mcp)
+skills/wapliss-whatsapp/SKILL.md  Usage rules for Claude
+```
 
-This plugin is version **0.8.0**. It was re-checked on 2026-11-09 against the
-deployed Wapliss MCP server (server version 1.0.0): the same 10 operations are
-implemented (`get_account_status` plus the 9 send tools), and the 17 read and
-management tools still return the phase-3 unavailable error. Tool names and
-parameters are unchanged from 0.7.0.
+## Releases
 
-On 2026-11-09 the OAuth discovery endpoints and the unauthenticated `401` +
-`WWW-Authenticate` response from `/mcp` were verified against production. That
-does not prove a full authenticated Claude OAuth flow or WhatsApp delivery;
-test OAuth and representative MCP calls before treating a release as fully
-production-verified, and re-check the backend contract before each release.
+Every commit on `main` is scanned by the Claude directory: bump `version` in
+`.claude-plugin/plugin.json` and `SKILL.md` for each release.
 
-## Changelog
+## Wapliss plugins
 
-- **0.8.0** (2026-11-09): Wapliss logo and branding in the README; documented
-  OAuth metadata, scopes and the panel URL; documented the exact
-  `no disponible hasta la fase 3` error so Claude recognizes unavailable tools;
-  removed the reference to the old backend repository. Backend changes in the
-  same window (no effect on the tool contract): Wapliss web sessions no longer
-  expire after inactivity, and the WhatsApp engine now runs continuously so
-  linked phones stay connected.
-- **0.7.0** (2026-10-12): Send queue and account-status tool.
+Wapliss works the same way in every assistant: one account, one linked phone,
+the same 16 tools.
 
-## Credits
+| Assistant | Where it works | Format | Get it |
+| --- | --- | --- | --- |
+| **Claude** | Claude.ai, Claude Desktop, Claude Code | Custom connector / Claude plugin | this repository |
+| ChatGPT | ChatGPT web and desktop | ChatGPT plugin (Agent Plugins) / custom MCP connector | [github.com/proteuscrypto/wapliss-for-chatgpt](https://github.com/proteuscrypto/wapliss-for-chatgpt) |
+| Gemini | Gemini app, Gemini CLI, Antigravity | Connected app, Gemini CLI extension, Antigravity plugin | [github.com/proteuscrypto/wapliss-for-gemini](https://github.com/proteuscrypto/wapliss-for-gemini) |
+| DeepSeek | DeepSeek Harness (dsh) | dsh bundle | [github.com/proteuscrypto/wapliss-for-deepseek](https://github.com/proteuscrypto/wapliss-for-deepseek) |
+| Any MCP client | Clients with remote MCP (Streamable HTTP) | OAuth 2.1, or a personal API key | [wapliss.com/integrations#mcp](https://wapliss.com/integrations#mcp) |
 
-Plugin developed and maintained by [Wapliss](https://wapliss.com/).
+## Credits and support
+
+- **Created and maintained by netdigitaltech** for [Wapliss](https://wapliss.com/).
+- Support: [open an issue](https://github.com/proteuscrypto/wapliss-whatsapp-for-claude/issues) in this repository.
+- Integration guides: [English](https://wapliss.com/integrations#claude) ·
+  [Español](https://wapliss.com/integraciones#claude)
+
+## Español
+
+**Wapliss WhatsApp para Claude**: conecta tu propio WhatsApp a
+Claude con el servidor MCP de Wapliss. Lee y resume chats y grupos y
+envía mensajes, archivos, ubicaciones y encuestas, siempre con tu confirmación.
+
+Cómo empezar: crea tu cuenta gratis y vincula tu teléfono; en Claude agrega un
+conector personalizado con `https://wapliss.com/mcp` (o instala el plugin) y
+pulsa **Conectar**. En Claude Code:
+`claude mcp add --transport http wapliss https://wapliss.com/mcp`.
+
+Ejemplos: *"Muéstrame mis últimos mensajes de WhatsApp"*, *"Resume lo que se
+habló hoy en el grupo de la familia"*, *"Envía 'Llego en 10 minutos' a
++54 9 11 5555 0100"*. Creado y mantenido por **netdigitaltech** para
+[Wapliss](https://wapliss.com/). Guía completa:
+[wapliss.com/integraciones#claude](https://wapliss.com/integraciones#claude).
+
+## Trademarks and license
+
+Claude and Anthropic are trademarks of Anthropic, PBC. WhatsApp is a trademark of Meta Platforms, Inc. Wapliss is
+an independent service and is not affiliated with, sponsored or endorsed by
+Meta, WhatsApp or Anthropic.
+
+Released under the [MIT License](LICENSE). Created by netdigitaltech.
